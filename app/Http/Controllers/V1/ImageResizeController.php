@@ -21,11 +21,15 @@ class ImageResizeController extends Controller
      */
     public function index()
     {
-        //
+        return ImageResizeResource::collection(ImageResize::paginate());
     }
 
 
     public function byAlbum(Album $album) {
+        $where = [
+            'album_id' => $album->id,
+        ];
+        return ImageResizeResource::collection(ImageResize::where($where)->paginate());
 
     }
 
@@ -63,7 +67,6 @@ class ImageResizeController extends Controller
             $filename = pathinfo($data['name'], PATHINFO_FILENAME);
             $extension = $image->getClientOriginalExtension();
             $originalPath = $absolutePath . $data['name'];
-            $data['path'] = $dir . $data['name'];
 
             $image->move($absolutePath, $data['name']);
         }else{
@@ -71,11 +74,13 @@ class ImageResizeController extends Controller
             $filename = pathinfo($image, PATHINFO_FILENAME);
             $extension = pathinfo($image, PATHINFO_EXTENSION);
             $originalPath = $absolutePath.$data['name'];
-            $data['path'] = $dir . $data['name'];
 
 
             copy($image, $originalPath);
         }
+
+        $data['path'] = $dir . $data['name'];
+
 
         $w = $all['w'];
         $h = $all['h'] ?? false;
@@ -98,21 +103,9 @@ class ImageResizeController extends Controller
      * @param  \App\Models\ImageResize  $imageResize
      * @return \Illuminate\Http\Response
      */
-    public function show(ImageResize $imageResize)
+    public function show(ImageResize $image)
     {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateImageResizeRequest  $request
-     * @param  \App\Models\ImageResize  $imageResize
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdateImageResizeRequest $request, ImageResize $imageResize)
-    {
-        //
+        return new ImageResizeResource($image);
     }
 
     /**
@@ -121,9 +114,10 @@ class ImageResizeController extends Controller
      * @param  \App\Models\ImageResize  $imageResize
      * @return \Illuminate\Http\Response
      */
-    public function destroy(ImageResize $imageResize)
+    public function destroy(ImageResize $image)
     {
-        //
+        $image->delete();
+        return response('', 204);
     }
 
     protected function getImageWidthAndHeight($w, $h, string $originalPath) {
