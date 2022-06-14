@@ -4,10 +4,10 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImageResizeRequest;
-use App\Http\Requests\UpdateImageResizeRequest;
 use App\Http\Resources\V1\ImageResizeResource;
 use App\Models\Album;
 use App\Models\ImageResize;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
@@ -19,13 +19,16 @@ class ImageResizeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return ImageResizeResource::collection(ImageResize::paginate());
+        return ImageResizeResource::collection(ImageResize::where('user_id', $request->user()->id)->paginate());
     }
 
 
-    public function byAlbum(Album $album) {
+    public function byAlbum(Request $request, Album $album) {
+        if ($request->user()->id != $album->user_id) {
+            return abort(403, 'Unauthorized');
+        }
         $where = [
             'album_id' => $album->id,
         ];
@@ -51,10 +54,14 @@ class ImageResizeController extends Controller
         $data = [
             'type' => ImageResize::TYPE_RESIZE,
             'data' => json_encode($all),
-            'user_id' => null,
+            'user_id' => $request->user()->id,
         ];
 
         if (isset($all['album_id'])) {
+            $album = Album::find($all['album_id']);
+            if ($request->user()->id != $album->user_id) {
+                return abort(403, 'Unauthorized');
+            }
             $data['album_id'] = $all['album_id'];
         }
 
@@ -103,8 +110,11 @@ class ImageResizeController extends Controller
      * @param  \App\Models\ImageResize  $imageResize
      * @return \Illuminate\Http\Response
      */
-    public function show(ImageResize $image)
+    public function show(Request $request, ImageResize $image)
     {
+        if ($request->user()->id != $image->user_id) {
+            return abort(403, 'Unauthorized');
+        }
         return new ImageResizeResource($image);
     }
 
@@ -114,8 +124,11 @@ class ImageResizeController extends Controller
      * @param  \App\Models\ImageResize  $imageResize
      * @return \Illuminate\Http\Response
      */
-    public function destroy(ImageResize $image)
+    public function destroy(Request $request, ImageResize $image)
     {
+        if ($request->user()->id != $image->user_id) {
+            return abort(403, 'Unauthorized');
+        }
         $image->delete();
         return response('', 204);
     }
